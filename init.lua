@@ -175,6 +175,8 @@ vim.keymap.set('n', '<Esc>', '<cmd>nohlsearch<CR>')
 
 -- Diagnostic keymaps
 vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagnostic [Q]uickfix list' })
+
+-- save and close
 vim.keymap.set('n', '<leader>ww', ':w<CR>', { desc = 'Save File' })
 vim.keymap.set('n', '<leader>wq', ':wq<CR>', { desc = 'Save File and Exit' })
 vim.keymap.set('n', '<leader>qq', ':qa!<CR>', { desc = 'Exit wim' })
@@ -188,10 +190,10 @@ vim.keymap.set('n', '<leader>qq', ':qa!<CR>', { desc = 'Exit wim' })
 vim.keymap.set('t', '<Esc><Esc>', '<C-\\><C-n>', { desc = 'Exit terminal mode' })
 
 -- TIP: Disable arrow keys in normal mode
--- vim.keymap.set('n', '<left>', '<cmd>echo "Use h to move!!"<CR>')
--- vim.keymap.set('n', '<right>', '<cmd>echo "Use l to move!!"<CR>')
--- vim.keymap.set('n', '<up>', '<cmd>echo "Use k to move!!"<CR>')
--- vim.keymap.set('n', '<down>', '<cmd>echo "Use j to move!!"<CR>')
+vim.keymap.set('n', '<left>', '<cmd>echo "Use h to move!!"<CR>')
+vim.keymap.set('n', '<right>', '<cmd>echo "Use l to move!!"<CR>')
+vim.keymap.set('n', '<up>', '<cmd>echo "Use k to move!!"<CR>')
+vim.keymap.set('n', '<down>', '<cmd>echo "Use j to move!!"<CR>')
 
 -- Keybinds to make split navigation easier.
 --  Use CTRL+<hjkl> to switch between windows
@@ -207,6 +209,38 @@ vim.keymap.set('n', '<C-k>', '<C-w><C-k>', { desc = 'Move focus to the upper win
 -- vim.keymap.set("n", "<C-S-l>", "<C-w>L", { desc = "Move window to the right" })
 -- vim.keymap.set("n", "<C-S-j>", "<C-w>J", { desc = "Move window to the lower" })
 -- vim.keymap.set("n", "<C-S-k>", "<C-w>K", { desc = "Move window to the upper" })
+
+vim.keymap.set('n', '<leader>ts', function()
+  vim.cmd.vnew()
+  vim.cmd.term()
+  vim.cmd.wincmd 'J'
+  vim.api.nvim_win_set_height(0, 10)
+end, { desc = 'Open small terminal' })
+
+local state = {
+  floating = {
+    buf = -1,
+    win = -1,
+  },
+}
+
+vim.api.nvim_create_user_command('FloatTerm', function()
+  if not vim.api.nvim_win_is_valid(state.floating.win) then
+    local buf, win = require('floatwin').open_floating_window { buf = state.floating.buf }
+    state.floating.win = win
+    state.floating.buf = buf
+    if vim.bo[state.floating.buf].buftype ~= 'terminal' then
+      vim.cmd.term()
+    end
+  else
+    vim.api.nvim_win_hide(state.floating.win)
+  end
+  -- vim.api.nvim_buf_set_lines(state.floating, 0, -1, false, { 'Scratch pad. Press q or <Esc> to close.' })
+end, {})
+
+vim.keymap.set('n', '<leader>tf', '<cmd>FloatTerm<CR>', { desc = 'Open floating terminal' })
+
+-- vim.keymap.set('n', '<leader>rc', ':source $MYVIMRC<CR>', { desc = 'Reload config' })
 
 -- [[ Basic Autocommands ]]
 --  See `:help lua-guide-autocommands`
