@@ -152,6 +152,13 @@ vim.o.splitbelow = true
 vim.o.list = true
 vim.opt.listchars = { tab = '» ', trail = '·', nbsp = '␣' }
 
+
+vim.opt.tabstop = 4
+vim.opt.shiftwidth = 4
+vim.opt.expandtab = true
+vim.opt.softtabstop = 4
+vim.opt.smartindent = true
+
 -- Preview substitutions live, as you type!
 vim.o.inccommand = 'split'
 
@@ -190,10 +197,10 @@ vim.keymap.set('n', '<leader>qq', ':qa!<CR>', { desc = 'Exit wim' })
 vim.keymap.set('t', '<Esc><Esc>', '<C-\\><C-n>', { desc = 'Exit terminal mode' })
 
 -- TIP: Disable arrow keys in normal mode
-vim.keymap.set('n', '<left>', '<cmd>echo "Use h to move!!"<CR>')
-vim.keymap.set('n', '<right>', '<cmd>echo "Use l to move!!"<CR>')
-vim.keymap.set('n', '<up>', '<cmd>echo "Use k to move!!"<CR>')
-vim.keymap.set('n', '<down>', '<cmd>echo "Use j to move!!"<CR>')
+-- vim.keymap.set('n', '<left>', '<cmd>echo "Use h to move!!"<CR>')
+-- vim.keymap.set('n', '<right>', '<cmd>echo "Use l to move!!"<CR>')
+-- vim.keymap.set('n', '<up>', '<cmd>echo "Use k to move!!"<CR>')
+-- vim.keymap.set('n', '<down>', '<cmd>echo "Use j to move!!"<CR>')
 
 -- Keybinds to make split navigation easier.
 --  Use CTRL+<hjkl> to switch between windows
@@ -239,6 +246,16 @@ vim.api.nvim_create_user_command('FloatTerm', function()
 end, {})
 
 vim.keymap.set('n', '<leader>tf', '<cmd>FloatTerm<CR>', { desc = 'Open floating terminal' })
+
+-- nvim project manager
+
+vim.keymap.set('n', '<leader>sp', '<cmd>NeovimProjectDiscover<CR>', { desc = 'Discover projects in ~/projects/ folder' })
+
+vim.keymap.set('n', '<leader>pp', '<cmd>NeovimProjectDiscover<CR>', { desc = 'Discover projects in ~/projects/ folder' })
+
+vim.keymap.set('n', '<leader>ph', '<cmd>NeovimProjectHistory<CR>', { desc = 'Open projects history' })
+
+vim.keymap.set('n', '<leader>pr', '<cmd>NeovimProjectLoadRecent<CR>', { desc = 'Open recent project' })
 
 -- vim.keymap.set('n', '<leader>rc', ':source $MYVIMRC<CR>', { desc = 'Reload config' })
 
@@ -887,7 +904,7 @@ require('lazy').setup({
         -- <c-k>: Toggle signature help
         --
         -- See :h blink-cmp-config-keymap for defining your own keymap
-        preset = 'default',
+        preset = 'enter',
 
         -- For more advanced Luasnip keymaps (e.g. selecting choice nodes, expansion) see:
         --    https://github.com/L3MON4D3/LuaSnip?tab=readme-ov-file#keymaps
