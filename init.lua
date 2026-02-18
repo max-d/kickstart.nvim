@@ -159,6 +159,8 @@ vim.opt.expandtab = true
 vim.opt.softtabstop = 4
 vim.opt.smartindent = true
 
+vim.opt.autoread = true
+
 -- Preview substitutions live, as you type!
 vim.o.inccommand = 'split'
 
@@ -333,7 +335,7 @@ require('lazy').setup({
     config = true,
     terminal = {
       split_side = "right", -- "left" or "right"
-      split_width_percentage = 0.40,
+      split_width_percentage = 0.50,
       provider = "auto", -- "auto", "snacks", "native", "external", "none", or custom provider table
       auto_close = true,
       snacks_win_opts = {}, -- Opts to pass to `Snacks.terminal.open()` - see Floating Window section below
@@ -789,7 +791,7 @@ require('lazy').setup({
       --  - settings (table): Override the default settings passed when initializing the server.
       --        For example, to see the options for `lua_ls`, you could go to: https://luals.github.io/wiki/settings/
       local servers = {
-        -- clangd = {},
+        clangd = {},
         -- gopls = {},
         pyright = {},
         -- rust_analyzer = {},
@@ -838,7 +840,7 @@ require('lazy').setup({
       require('mason-tool-installer').setup { ensure_installed = ensure_installed }
 
       require('mason-lspconfig').setup {
-        ensure_installed = {}, -- explicitly set to an empty table (Kickstart populates installs via mason-tool-installer)
+        ensure_installed = {"clangd"}, -- explicitly set to an empty table (Kickstart populates installs via mason-tool-installer)
         automatic_installation = true,
         automatic_enable = true,
         handlers = {
