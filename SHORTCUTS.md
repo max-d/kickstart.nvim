@@ -144,6 +144,7 @@ These are buffer-local and appear only after an LSP server attaches to a buffer.
 | `gO` | `n` | Open document symbols with Telescope |
 | `gW` | `n` | Open workspace symbols with Telescope |
 | `grt` | `n` | Go to type definition with Telescope |
+| `grx` | `n` | Run CodeLens when supported by an attached LSP server |
 | `<leader>th` | `n` | Toggle inlay hints, when supported by the server |
 
 ## venv-selector.nvim
@@ -153,6 +154,19 @@ Loaded for Python files.
 | Shortcut | Mode | Action |
 | --- | --- | --- |
 | `<leader>vs` | `n` | Open virtual environment selector |
+
+## neotest / neotest-python
+
+Loaded for Python files. Uses `pytest` by default.
+
+| Shortcut | Mode | Action |
+| --- | --- | --- |
+| `<leader>nt` | `n` | Run nearest test |
+| `<leader>nf` | `n` | Run tests in current file |
+| `<leader>na` | `n` | Run all tests from the current working directory |
+| `<leader>nd` | `n` | Debug nearest test with DAP |
+| `<leader>no` | `n` | Open test output |
+| `<leader>ns` | `n` | Toggle test summary |
 
 ## conform.nvim
 

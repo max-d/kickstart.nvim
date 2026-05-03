@@ -301,29 +301,6 @@ require('lazy').setup({
   {
     "nickjvandyke/opencode.nvim",
     version = "*", -- Latest stable release
-    dependencies = {
-      {
-        -- `snacks.nvim` integration is recommended, but optional
-        ---@module "snacks" <- Loads `snacks.nvim` types for configuration intellisense
-        "folke/snacks.nvim",
-        optional = true,
-        opts = {
-          input = {}, -- Enhances `ask()`
-          picker = { -- Enhances `select()`
-            actions = {
-              opencode_send = function(...) return require("opencode").snacks_picker_send(...) end,
-            },
-            win = {
-              input = {
-                keys = {
-                  ["<a-a>"] = { "opencode_send", mode = { "n", "i" } },
-                },
-              },
-            },
-          },
-        },
-      },
-    },
     config = function()
       ---@type opencode.Opts
       vim.g.opencode_opts = {
@@ -597,7 +574,7 @@ require('lazy').setup({
       -- and language tooling communicate in a standardized fashion.
       --
       -- In general, you have a "server" which is some tool built to understand a particular
-      -- language (such as `gopls`, `lua_ls`, `rust_analyzer`, etc.). These Language Servers
+      -- language (such as `lua_ls`, etc.). These Language Servers
       -- (sometimes called LSP servers, but that's kind of like ATM Machine) are standalone
       -- processes that communicate with some "client" - in this case, Neovim!
       --
@@ -616,7 +593,7 @@ require('lazy').setup({
 
       --  This function gets run when an LSP attaches to a particular buffer.
       --    That is to say, every time a new file is opened that is associated with
-      --    an lsp (for example, opening `main.rs` is associated with `rust_analyzer`) this
+      --    an lsp this
       --    function will be executed to configure the current buffer
       vim.api.nvim_create_autocmd('LspAttach', {
         group = vim.api.nvim_create_augroup('kickstart-lsp-attach', { clear = true }),
@@ -680,6 +657,26 @@ require('lazy').setup({
               return client.supports_method(method, { bufnr = bufnr })
             end
           end
+
+          local function buffer_supports_method(method)
+            for _, attached_client in ipairs(vim.lsp.get_clients { bufnr = event.buf }) do
+              if client_supports_method(attached_client, method, event.buf) then
+                return true
+              end
+            end
+
+            return false
+          end
+
+          map('grx', function()
+            local method = vim.lsp.protocol.Methods.textDocument_codeLens
+            if not buffer_supports_method(method) then
+              vim.notify('LSP: CodeLens is not supported for this buffer.', vim.log.levels.INFO)
+              return
+            end
+
+            vim.lsp.codelens.run()
+          end, 'Run CodeLens')
 
           -- The following two autocommands are used to highlight references of the
           -- word under your cursor when your cursor rests there for a little while.
@@ -768,17 +765,7 @@ require('lazy').setup({
       --        For example, to see the options for `lua_ls`, you could go to: https://luals.github.io/wiki/settings/
       local servers = {
         clangd = {},
-        -- gopls = {},
         pyright = {},
-        -- rust_analyzer = {},
-        -- ... etc. See `:help lspconfig-all` for a list of all the pre-configured LSPs
-        --
-        -- Some languages (like typescript) have entire language plugins that can be useful:
-        --    https://github.com/pmizio/typescript-tools.nvim
-        --
-        -- But for many setups, the LSP (`ts_ls`) will work just fine
-        -- ts_ls = {},
-        --
 
         lua_ls = {
           -- cmd = { ... },
@@ -836,7 +823,7 @@ require('lazy').setup({
     'linux-cultist/venv-selector.nvim',
     dependencies = {
       'neovim/nvim-lspconfig',
-      { 'nvim-telescope/telescope.nvim', branch = '0.1.x', dependencies = { 'nvim-lua/plenary.nvim' } }, -- optional: you can also use fzf-lua, snacks, mini-pick instead.
+      { 'nvim-telescope/telescope.nvim', branch = '0.1.x', dependencies = { 'nvim-lua/plenary.nvim' } },
     },
     ft = 'python', -- Load when opening Python files
     keys = {
@@ -846,6 +833,82 @@ require('lazy').setup({
       search = {}, -- if you add your own searches, they go here.
       options = {}, -- if you add plugin options, they go here.
     },
+  },
+  {
+    'nvim-neotest/neotest',
+    dependencies = {
+      'nvim-lua/plenary.nvim',
+      'nvim-neotest/nvim-nio',
+      'antoinemadec/FixCursorHold.nvim',
+      'nvim-neotest/neotest-python',
+      'mfussenegger/nvim-dap',
+    },
+    ft = 'python',
+    keys = {
+      {
+        '<leader>nt',
+        function()
+          require('neotest').run.run()
+        end,
+        desc = '[N]eotest nearest',
+      },
+      {
+        '<leader>nf',
+        function()
+          require('neotest').run.run(vim.fn.expand '%')
+        end,
+        desc = '[N]eotest file',
+      },
+      {
+        '<leader>na',
+        function()
+          require('neotest').run.run(vim.uv.cwd())
+        end,
+        desc = '[N]eotest all',
+      },
+      {
+        '<leader>nd',
+        function()
+          require('neotest').run.run { strategy = 'dap' }
+        end,
+        desc = '[N]eotest debug nearest',
+      },
+      {
+        '<leader>no',
+        function()
+          require('neotest').output.open { enter = true, auto_close = true }
+        end,
+        desc = '[N]eotest output',
+      },
+      {
+        '<leader>ns',
+        function()
+          require('neotest').summary.toggle()
+        end,
+        desc = '[N]eotest summary',
+      },
+    },
+    opts = {
+      adapters = {
+        ['neotest-python'] = {
+          runner = 'pytest',
+          python = './venv/bin/python',
+          dap = {
+            justMyCode = false,
+          },
+        },
+      },
+    },
+    config = function(_, opts)
+      local adapters = {}
+      for adapter_name, adapter_opts in pairs(opts.adapters) do
+        table.insert(adapters, require(adapter_name)(adapter_opts))
+      end
+
+      require('neotest').setup {
+        adapters = adapters,
+      }
+    end,
   },
 
   { -- Autoformat
@@ -907,17 +970,6 @@ require('lazy').setup({
           end
           return 'make install_jsregexp'
         end)(),
-        dependencies = {
-          -- `friendly-snippets` contains a variety of premade snippets.
-          --    See the README about individual language/framework/plugin snippets:
-          --    https://github.com/rafamadriz/friendly-snippets
-          -- {
-          --   'rafamadriz/friendly-snippets',
-          --   config = function()
-          --     require('luasnip.loaders.from_vscode').lazy_load()
-          --   end,
-          -- },
-        },
         opts = {},
       },
       'folke/lazydev.nvim',
@@ -1055,7 +1107,7 @@ require('lazy').setup({
     build = ':TSUpdate',
     -- [[ Configure Treesitter ]] See `:help nvim-treesitter`
     opts = {
-      ensure_installed = { 'bash', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc' },
+      ensure_installed = { 'bash', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc', 'python'},
       -- Autoinstall languages that are not installed
       auto_install = true,
       highlight = {
@@ -1067,27 +1119,8 @@ require('lazy').setup({
       },
       indent = { enable = true, disable = { 'ruby' } },
     },
-    -- There are additional nvim-treesitter modules that you can use to interact
-    -- with nvim-treesitter. You should go explore a few and see what interests you:
-    --
-    --    - Incremental selection: Included, see `:help nvim-treesitter-incremental-selection-mod`
-    --    - Show your current context: https://github.com/nvim-treesitter/nvim-treesitter-context
-    --    - Treesitter + textobjects: https://github.com/nvim-treesitter/nvim-treesitter-textobjects
   },
 
-  -- The following comments only work if you have downloaded the kickstart repo, not just copy pasted the
-  -- init.lua. If you want these files, they are in the repository, so you can just download them and
-  -- place them in the correct locations.
-
-  -- NOTE: Next step on your Neovim journey: Add/Configure additional plugins for Kickstart
-  --
-  --  Here are some example plugins that I've included in the Kickstart repository.
-  --  Uncomment any of the lines below to enable them (you will need to restart nvim).
-  --
-  -- require 'kickstart.plugins.debug',
-  -- require 'kickstart.plugins.indent_line',
-  -- require 'kickstart.plugins.lint',
-  -- require 'kickstart.plugins.autopairs',
   require 'kickstart.plugins.neo-tree',
   -- require 'kickstart.plugins.gitsigns', -- adds gitsigns recommend keymaps
 
