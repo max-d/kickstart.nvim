@@ -190,14 +190,6 @@ vim.keymap.set('n', '<leader>ww', ':w<CR>', { desc = 'Save File' })
 vim.keymap.set('n', '<leader>wq', ':wq<CR>', { desc = 'Save File and Exit' })
 vim.keymap.set('n', '<leader>qq', ':qa!<CR>', { desc = 'Exit wim' })
 
--- Exit terminal mode in the builtin terminal with a shortcut that is a bit easier
--- for people to discover. Otherwise, you normally need to press <C-\><C-n>, which
--- is not what someone will guess without a bit more experience.
---
--- NOTE: This won't work in all terminal emulators/tmux/etc. Try your own mapping
--- or just use <C-\><C-n> to exit terminal mode
-vim.keymap.set('t', '<Esc><Esc>', '<C-\\><C-n>', { desc = 'Exit terminal mode' })
-
 -- TIP: Disable arrow keys in normal mode
 -- vim.keymap.set('n', '<left>', '<cmd>echo "Use h to move!!"<CR>')
 -- vim.keymap.set('n', '<right>', '<cmd>echo "Use l to move!!"<CR>')
@@ -226,31 +218,8 @@ vim.keymap.set('n', '<leader>ts', function()
   vim.api.nvim_win_set_height(0, 10)
 end, { desc = 'Open small terminal' })
 
-local state = {
-  floating = {
-    buf = -1,
-    win = -1,
-  },
-}
-
-vim.api.nvim_create_user_command('FloatTerm', function()
-  if not vim.api.nvim_win_is_valid(state.floating.win) then
-    local buf, win = require('floatwin').open_floating_window { buf = state.floating.buf }
-    state.floating.win = win
-    state.floating.buf = buf
-    if vim.bo[state.floating.buf].buftype ~= 'terminal' then
-      vim.cmd.term()
-    end
-
-    vim.api.nvim_set_current_win(win)
-    vim.cmd.startinsert()
-
-  else
-    vim.api.nvim_win_hide(state.floating.win)
-  end
-  -- vim.api.nvim_buf_set_lines(state.floating, 0, -1, false, { 'Scratch pad. Press q or <Esc> to close.' })
-end, {})
-
+vim.keymap.set('t', '<Esc><Esc>', '<C-\\><C-n>', { desc = 'Exit terminal mode' })
+require('floaterm').setup()
 vim.keymap.set('n', '<leader>tf', '<cmd>FloatTerm<CR>', { desc = 'Open floating terminal' })
 
 -- nvim project manager
@@ -330,52 +299,55 @@ require('lazy').setup({
   },
 
   {
-    "coder/claudecode.nvim",
-    dependencies = { "folke/snacks.nvim" },
-    config = true,
-    terminal = {
-      split_side = "right", -- "left" or "right"
-      split_width_percentage = 0.50,
-      provider = "auto", -- "auto", "snacks", "native", "external", "none", or custom provider table
-      auto_close = true,
-      snacks_win_opts = {}, -- Opts to pass to `Snacks.terminal.open()` - see Floating Window section below
-
-      -- Provider-specific options
-      provider_opts = {
-        -- Command for external terminal provider. Can be:
-        -- 1. String with %s placeholder: "alacritty -e %s" (backward compatible)
-        -- 2. String with two %s placeholders: "a lacritty --working-directory %s -e %s" (cwd, command)
-        -- 3. Function returning command: function(cmd, env) return "alacritty -e " .. cmd end
-        external_terminal_cmd = nil,
-      },
-    },
-    diff_opts = {
-      auto_close_on_accept = true,
-      vertical_split = false,
-      open_in_current_tab = true,
-      keep_terminal_focus = false, -- If true, moves focus back to terminal after diff opens
-    },
-    keys = {
-      { "<leader>a", nil, desc = "AI/Claude Code" },
-      { "<leader>ac", "<cmd>ClaudeCode<cr>", desc = "Toggle Claude" },
-      { "<leader>af", "<cmd>ClaudeCodeFocus<cr>", desc = "Focus Claude" },
-      { "<leader>ar", "<cmd>ClaudeCode --resume<cr>", desc = "Resume Claude" },
-      { "<leader>aC", "<cmd>ClaudeCode --continue<cr>", desc = "Continue Claude" },
-      { "<leader>am", "<cmd>ClaudeCodeSelectModel<cr>", desc = "Select Claude model" },
-      { "<leader>ab", "<cmd>ClaudeCodeAdd %<cr>", desc = "Add current buffer" },
-      { "<leader>as", "<cmd>ClaudeCodeSend<cr>", mode = "v", desc = "Send to Claude" },
+    "nickjvandyke/opencode.nvim",
+    version = "*", -- Latest stable release
+    dependencies = {
       {
-        "<leader>as",
-        "<cmd>ClaudeCodeTreeAdd<cr>",
-        desc = "Add file",
-        ft = { "NvimTree", "neo-tree", "oil", "minifiles", "netrw" },
+        -- `snacks.nvim` integration is recommended, but optional
+        ---@module "snacks" <- Loads `snacks.nvim` types for configuration intellisense
+        "folke/snacks.nvim",
+        optional = true,
+        opts = {
+          input = {}, -- Enhances `ask()`
+          picker = { -- Enhances `select()`
+            actions = {
+              opencode_send = function(...) return require("opencode").snacks_picker_send(...) end,
+            },
+            win = {
+              input = {
+                keys = {
+                  ["<a-a>"] = { "opencode_send", mode = { "n", "i" } },
+                },
+              },
+            },
+          },
+        },
       },
-      -- Diff management
-      { "<leader>aa", "<cmd>ClaudeCodeDiffAccept<cr>", desc = "Accept diff" },
-      { "<leader>ad", "<cmd>ClaudeCodeDiffDeny<cr>", desc = "Deny diff" },
     },
-  },
+    config = function()
+      ---@type opencode.Opts
+      vim.g.opencode_opts = {
+        -- Your configuration, if any; goto definition on the type or field for details
+      }
 
+      vim.o.autoread = true -- Required for `opts.events.reload`
+
+      -- Recommended/example keymaps
+      vim.keymap.set({ "n", "x" }, "<leader>oa", function() require("opencode").ask("@this: ", { submit = true }) end, { desc = "Ask opencode…" })
+      vim.keymap.set({ "n", "x" }, "<leader>oe", function() require("opencode").select() end,                          { desc = "Execute opencode action…" })
+      vim.keymap.set({ "n", "t" }, "<leader>ot", function() require("opencode").toggle() end,                          { desc = "Toggle opencode" })
+
+      vim.keymap.set({ "n", "x" }, "go",  function() return require("opencode").operator("@this ") end,        { desc = "Add range to opencode", expr = true })
+      vim.keymap.set("n",          "goo", function() return require("opencode").operator("@this ") .. "_" end, { desc = "Add line to opencode", expr = true })
+
+      vim.keymap.set("n", "<leader>oj", function() require("opencode").command("session.half.page.up") end,   { desc = "Scroll opencode up" })
+      vim.keymap.set("n", "<leader>ok", function() require("opencode").command("session.half.page.down") end, { desc = "Scroll opencode down" })
+
+      -- You may want these if you use the opinionated `<C-a>` and `<C-x>` keymaps above — otherwise consider `<leader>o…` (and remove terminal mode from the `toggle` keymap)
+      vim.keymap.set("n", "+", "<C-a>", { desc = "Increment under cursor", noremap = true })
+      vim.keymap.set("n", "-", "<C-x>", { desc = "Decrement under cursor", noremap = true })
+    end,
+  },
   -- Alternatively, use `config = function() ... end` for full control over the configuration.
   -- If you prefer to call `setup` explicitly, use:
   --    {
@@ -527,11 +499,14 @@ require('lazy').setup({
         -- You can put your default mappings / updates / etc. in here
         --  All the info you're looking for is in `:help telescope.setup()`
         --
-        -- defaults = {
-        --   mappings = {
-        --     i = { ['<c-enter>'] = 'to_fuzzy_refine' },
-        --   },
-        -- },
+        defaults = {
+          preview = {
+            treesitter = false,
+          },
+          -- mappings = {
+          --   i = { ['<c-enter>'] = 'to_fuzzy_refine' },
+          -- },
+        },
         -- pickers = {}
         extensions = {
           ['ui-select'] = {
@@ -563,6 +538,7 @@ require('lazy').setup({
         builtin.current_buffer_fuzzy_find(require('telescope.themes').get_dropdown {
           winblend = 10,
           previewer = false,
+          treesitter = false,
         })
       end, { desc = '[/] Fuzzily search in current buffer' })
 
@@ -1077,7 +1053,6 @@ require('lazy').setup({
   { -- Highlight, edit, and navigate code
     'nvim-treesitter/nvim-treesitter',
     build = ':TSUpdate',
-    main = 'nvim-treesitter.configs', -- Sets main module to use for opts
     -- [[ Configure Treesitter ]] See `:help nvim-treesitter`
     opts = {
       ensure_installed = { 'bash', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc' },
