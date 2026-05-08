@@ -766,6 +766,7 @@ require('lazy').setup({
       local servers = {
         clangd = {},
         pyright = {},
+        rust_analyzer = {},
 
         lua_ls = {
           -- cmd = { ... },
@@ -803,7 +804,7 @@ require('lazy').setup({
       require('mason-tool-installer').setup { ensure_installed = ensure_installed }
 
       require('mason-lspconfig').setup {
-        ensure_installed = {"clangd"}, -- explicitly set to an empty table (Kickstart populates installs via mason-tool-installer)
+        ensure_installed = vim.tbl_keys(servers or {}),
         automatic_installation = true,
         automatic_enable = true,
         handlers = {
@@ -892,7 +893,6 @@ require('lazy').setup({
       adapters = {
         ['neotest-python'] = {
           runner = 'pytest',
-          python = './venv/bin/python',
           dap = {
             justMyCode = false,
           },
@@ -910,7 +910,15 @@ require('lazy').setup({
       }
     end,
   },
-
+  {
+    'mrcjkb/rustaceanvim',
+    -- To avoid being surprised by breaking changes,
+    -- I recommend you set a version range
+    version = '^9',
+    -- This plugin implements proper lazy-loading (see :h lua-plugin-lazy).
+    -- No need for lazy.nvim to lazy-load it.
+    lazy = false,
+  },
   { -- Autoformat
     'stevearc/conform.nvim',
     event = { 'BufWritePre' },
