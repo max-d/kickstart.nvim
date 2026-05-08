@@ -836,6 +836,197 @@ require('lazy').setup({
     },
   },
   {
+    'mfussenegger/nvim-dap',
+    dependencies = {
+      'rcarriga/nvim-dap-ui',
+      'nvim-neotest/nvim-nio',
+      'theHamsta/nvim-dap-virtual-text',
+      'mason-org/mason.nvim',
+      'jay-babu/mason-nvim-dap.nvim',
+    },
+    keys = {
+      {
+        '<F5>',
+        function()
+          require('dap').continue()
+        end,
+        desc = 'Debug: Start/Continue',
+      },
+      {
+        '<F10>',
+        function()
+          require('dap').step_over()
+        end,
+        desc = 'Debug: Step Over',
+      },
+      {
+        '<F11>',
+        function()
+          require('dap').step_into()
+        end,
+        desc = 'Debug: Step Into',
+      },
+      {
+        '<F12>',
+        function()
+          require('dap').step_out()
+        end,
+        desc = 'Debug: Step Out',
+      },
+      {
+        '<leader>db',
+        function()
+          require('dap').toggle_breakpoint()
+        end,
+        desc = '[D]ebug Toggle [B]reakpoint',
+      },
+      {
+        '<leader>dB',
+        function()
+          require('dap').set_breakpoint(vim.fn.input 'Breakpoint condition: ')
+        end,
+        desc = '[D]ebug Conditional [B]reakpoint',
+      },
+      {
+        '<leader>dc',
+        function()
+          require('dap').run_to_cursor()
+        end,
+        desc = '[D]ebug Run to [C]ursor',
+      },
+      {
+        '<leader>dl',
+        function()
+          require('dap').run_last()
+        end,
+        desc = '[D]ebug Run [L]ast',
+      },
+      {
+        '<leader>dr',
+        function()
+          require('dap').repl.toggle()
+        end,
+        desc = '[D]ebug [R]EPL',
+      },
+      {
+        '<leader>dt',
+        function()
+          require('dap').terminate()
+        end,
+        desc = '[D]ebug [T]erminate',
+      },
+      {
+        '<leader>du',
+        function()
+          require('dapui').toggle()
+        end,
+        desc = '[D]ebug Toggle [U]I',
+      },
+    },
+    config = function()
+      local dap = require 'dap'
+      local dapui = require 'dapui'
+
+      require('mason-nvim-dap').setup {
+        ensure_installed = {
+          'codelldb',
+        },
+        automatic_installation = true,
+        handlers = {},
+      }
+
+      require('nvim-dap-virtual-text').setup {}
+
+      dapui.setup {
+        icons = { expanded = '▾', collapsed = '▸', current_frame = '*' },
+        controls = {
+          icons = {
+            pause = '⏸',
+            play = '▶',
+            step_into = '⏎',
+            step_over = '⏭',
+            step_out = '⏮',
+            step_back = 'b',
+            run_last = '▶▶',
+            terminate = '⏹',
+            disconnect = '⏏',
+          },
+        },
+      }
+
+      local function get_codelldb_paths()
+        local ok, registry = pcall(require, 'mason-registry')
+        if not ok or not registry.is_installed 'codelldb' then
+          return nil, nil
+        end
+
+        local package = registry.get_package 'codelldb'
+        local install_path
+        if type(package.get_install_path) == 'function' then
+          install_path = package:get_install_path()
+        else
+          install_path = vim.fs.joinpath(vim.fn.expand '$MASON', 'packages', package.name)
+        end
+
+        local extension_path = vim.fs.joinpath(install_path, 'extension')
+        local adapter_path = vim.fs.joinpath(extension_path, 'adapter', 'codelldb')
+        local liblldb_path = vim.fs.joinpath(extension_path, 'lldb', 'lib', 'liblldb.so')
+
+        local sysname = vim.uv.os_uname().sysname
+        if sysname == 'Darwin' then
+          liblldb_path = vim.fs.joinpath(extension_path, 'lldb', 'lib', 'liblldb.dylib')
+        elseif sysname:match 'Windows' then
+          adapter_path = adapter_path .. '.exe'
+          liblldb_path = vim.fs.joinpath(extension_path, 'lldb', 'bin', 'liblldb.dll')
+        end
+
+        return adapter_path, liblldb_path
+      end
+
+      local codelldb_path, liblldb_path = get_codelldb_paths()
+      if codelldb_path and liblldb_path then
+        dap.adapters.codelldb = {
+          type = 'server',
+          port = '${port}',
+          executable = {
+            command = codelldb_path,
+            args = { '--liblldb', liblldb_path, '--port', '${port}' },
+          },
+        }
+
+        local function executable()
+          return vim.fn.input('Path to executable: ', vim.fn.getcwd() .. '/', 'file')
+        end
+
+        local codelldb_launch = {
+          {
+            name = 'Launch executable',
+            type = 'codelldb',
+            request = 'launch',
+            program = executable,
+            cwd = '${workspaceFolder}',
+            stopOnEntry = false,
+          },
+          {
+            name = 'Attach to process',
+            type = 'codelldb',
+            request = 'attach',
+            pid = require('dap.utils').pick_process,
+            cwd = '${workspaceFolder}',
+          },
+        }
+
+        dap.configurations.c = codelldb_launch
+        dap.configurations.cpp = codelldb_launch
+        dap.configurations.rust = codelldb_launch
+      end
+
+      dap.listeners.after.event_initialized['dapui_config'] = dapui.open
+      dap.listeners.before.event_terminated['dapui_config'] = dapui.close
+      dap.listeners.before.event_exited['dapui_config'] = dapui.close
+    end,
+  },
+  {
     'nvim-neotest/neotest',
     dependencies = {
       'nvim-lua/plenary.nvim',
@@ -918,6 +1109,14 @@ require('lazy').setup({
     -- This plugin implements proper lazy-loading (see :h lua-plugin-lazy).
     -- No need for lazy.nvim to lazy-load it.
     lazy = false,
+    keys = {
+      {
+        '<leader>dR',
+        '<cmd>RustLsp debuggables<CR>',
+        ft = 'rust',
+        desc = '[D]ebug [R]ust debuggables',
+      },
+    },
   },
   { -- Autoformat
     'stevearc/conform.nvim',

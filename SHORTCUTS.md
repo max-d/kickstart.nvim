@@ -312,13 +312,32 @@ Panel-local shortcuts:
 | `<Up>` | `n`, `i` | Focus search field |
 | `<Left>` | `n`, `i` | Focus search field |
 
+## nvim-dap / nvim-dap-ui
+
+Configured for Rust, C, and C++ through Mason-managed CodeLLDB.
+
+| Shortcut | Mode | Action |
+| --- | --- | --- |
+| `<F5>` | `n` | Start or continue debugging |
+| `<F10>` | `n` | Step over |
+| `<F11>` | `n` | Step into |
+| `<F12>` | `n` | Step out |
+| `<leader>db` | `n` | Toggle breakpoint |
+| `<leader>dB` | `n` | Set conditional breakpoint |
+| `<leader>dc` | `n` | Run to cursor |
+| `<leader>dl` | `n` | Run last debug configuration |
+| `<leader>dr` | `n` | Toggle debug REPL |
+| `<leader>dt` | `n` | Terminate debug session |
+| `<leader>du` | `n` | Toggle debug UI |
+| `<leader>dR` | `n` | Show Rust debuggables from rust-analyzer |
+
 ## Inactive plugin shortcut files
 
 These plugin modules exist in `lua/kickstart/plugins/`, but their `require` lines are currently commented out in `init.lua`.
 
-### nvim-dap / nvim-dap-ui / nvim-dap-go
+### nvim-dap / nvim-dap-ui / nvim-dap-go old Kickstart example
 
-Inactive file: `lua/kickstart/plugins/debug.lua`
+Inactive file: `lua/kickstart/plugins/debug.lua`. The main config now has an active nvim-dap setup; this section only documents the unused Kickstart example file.
 
 | Shortcut | Mode | Action |
 | --- | --- | --- |
