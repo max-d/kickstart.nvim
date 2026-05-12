@@ -415,7 +415,7 @@ require('lazy').setup({
       spec = {
         { '<leader>s', group = '[S]earch' },
         { '<leader>t', group = '[T]oggle' },
-        { '<leader>h', group = 'Git [H]unk', mode = { 'n', 'v' } },
+        { '<leader>g', group = '[G]it hunk', mode = { 'n', 'v' } },
       },
     },
   },
@@ -429,6 +429,7 @@ require('lazy').setup({
 
   { -- Fuzzy Finder (files, lsp, etc)
     'nvim-telescope/telescope.nvim',
+    tag = 'v0.2.2',
     event = 'VimEnter',
     dependencies = {
       'nvim-lua/plenary.nvim',
@@ -824,7 +825,7 @@ require('lazy').setup({
     'linux-cultist/venv-selector.nvim',
     dependencies = {
       'neovim/nvim-lspconfig',
-      { 'nvim-telescope/telescope.nvim', branch = '0.1.x', dependencies = { 'nvim-lua/plenary.nvim' } },
+      { 'nvim-telescope/telescope.nvim', tag = 'v0.2.2', dependencies = { 'nvim-lua/plenary.nvim' } },
     },
     ft = 'python', -- Load when opening Python files
     keys = {
@@ -993,6 +994,12 @@ require('lazy').setup({
             args = { '--liblldb', liblldb_path, '--port', '${port}' },
           },
         }
+        dap.adapters.cppdbg = dap.adapters.codelldb
+        dap.adapters.cppvsdbg = dap.adapters.codelldb
+
+        local vscode = require 'dap.ext.vscode'
+        vscode.type_to_filetypes.cppdbg = { 'c', 'cpp' }
+        vscode.type_to_filetypes.cppvsdbg = { 'c', 'cpp' }
 
         local function executable()
           return vim.fn.input('Path to executable: ', vim.fn.getcwd() .. '/', 'file')
@@ -1329,7 +1336,7 @@ require('lazy').setup({
   },
 
   require 'kickstart.plugins.neo-tree',
-  -- require 'kickstart.plugins.gitsigns', -- adds gitsigns recommend keymaps
+  require 'kickstart.plugins.gitsigns', -- adds gitsigns recommended keymaps
 
   -- NOTE: The import below can automatically add your own plugins, configuration, etc from `lua/custom/plugins/*.lua`
   --    This is the easiest way to modularize your config.
